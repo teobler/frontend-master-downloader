@@ -1,12 +1,19 @@
 const puppeteer = require('puppeteer');
 const chalk = require('chalk');
-const { msToMin } = require('./utils');
+const {
+  msToMin
+} = require('./utils');
 const url = 'https://frontendmasters.com';
 const SECONDES = 1000;
 let stopInterval;
 require('events').EventEmitter.prototype._maxListeners = 100;
 
-module.exports = async ({ user, pass, courses, id }) => {
+module.exports = async ({
+  user,
+  pass,
+  courses,
+  id
+}) => {
   console.log(chalk.green('You are using frontendmaster-downloader \n'));
   console.log(chalk.green('Try the login ... \n'));
   const browser = await puppeteer.launch({
@@ -14,12 +21,12 @@ module.exports = async ({ user, pass, courses, id }) => {
   });
   const page = await browser.newPage();
   await page.setUserAgent(
-    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.80 Safari/537.36'
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.80 Safari/537.36'
   );
+
+  // login
   await page.goto(url + '/login');
-
   await page.waitFor(2 * SECONDES);
-
   await page.waitForSelector('#username');
   const username = await page.$('#username');
   await username.type(user);
@@ -27,9 +34,10 @@ module.exports = async ({ user, pass, courses, id }) => {
   await password.type(pass);
   const button = await page.$('button');
   await button.click();
-  console.log(chalk.green(user + ' logged \n'));
-  console.log(chalk.green('First scrape all the links... \n'));
   await page.waitFor(5 * SECONDES);
+  console.log(chalk.green(user + ' logged \n'));
+
+  console.log(chalk.green('First scrape all the links... \n'));
   let selector = '.title a';
   await page.waitForSelector(selector);
   const obj = {
@@ -118,6 +126,8 @@ module.exports = async ({ user, pass, courses, id }) => {
   }
 
   async function getLinks(newLinks) {
+    let flag = 0;
+
     for (const templink of newLinks) {
       console.log(chalk.yellow('scraping', templink.link + '\n'));
       const {
@@ -127,6 +137,12 @@ module.exports = async ({ user, pass, courses, id }) => {
 
       try {
         await page.goto(link);
+        await page.waitFor(6 * SECONDES);
+        await page.click('video');
+        if (flag === 0) {
+          await page.click('.vjs-resolutions button');
+          flag++;
+        }
       } catch (err) {
         //console.log("erreur, err");
       }
@@ -140,10 +156,10 @@ module.exports = async ({ user, pass, courses, id }) => {
           return video.src;
         }, selector)
         .catch(err => {
-          //console.log(err);
+          // console.log(err);
           return 'retry';
         });
-      //console.log("video link fetched", videoLink);
+      // console.log("video link fetched", videoLink);
 
       if (videoLink === 'retry' || !videoLink.length) {
         console.log(chalk.red('You have reached maximum request limit \n'));
